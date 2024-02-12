@@ -1,5 +1,4 @@
 import { gql, useQuery } from '@apollo/client'
-import { useState } from 'react'
 
 const ALL_BOOKS = gql`
 query allBooks($genre: String) {
@@ -12,28 +11,29 @@ query allBooks($genre: String) {
   }
 }`
 
-const ALL_GENRES = gql`
+const FAVORITE_GENRE = gql`
 query {
-  genres
-}`
+    me {
+      favoriteGenre
+    }
+  }`
 
-const Books = (props) => {
-  const [genre, setGenre] = useState('')
+const Recommendations = (props) => {
+    const me = useQuery(FAVORITE_GENRE, {});
+    const result = useQuery(ALL_BOOKS, {
+        variables: { genre: me?.data?.me?.favoriteGenre },
+        pollInterval: 2000
+      });
 
-  const result = useQuery(ALL_BOOKS, {
-    variables: { genre: genre },
-    pollInterval: 2000
-  });
+      console.log(me);
 
-  const allGenres = useQuery(ALL_GENRES, {
-    pollInterval: 2000
-  })
+      if (!props.show) {
+        return null
+      }
 
-  if (!props.show) {
-    return null
-  }
+    if (me?.data?.me?.favoriteGenre) {
 
-  if (result.loading || allGenres.loading)  {
+  if (result.loading || me.loading)  {
     return <div>loading...</div>
   }
 
@@ -41,7 +41,7 @@ const Books = (props) => {
     <div>
       <h2>books</h2>
 
-      {genre.length > 0 && 'in genre ' + genre}
+      {'books in your favorite genre ' + me.data.me.favoriteGenre}
 
       <table>
         <tbody>
@@ -59,15 +59,10 @@ const Books = (props) => {
           ))}
         </tbody>
       </table>
-
-      <div>
-        {allGenres.data.genres.map((genre) => (
-        <button onClick={() => setGenre(genre)}>{genre}</button>
-        ))}
-        <button onClick={() => setGenre('')}>all genres</button>
-      </div>
     </div>
   )
 }
+return ('You have not favorite genre!')
+}
 
-export default Books
+export default Recommendations
